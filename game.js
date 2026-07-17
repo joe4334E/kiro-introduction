@@ -360,23 +360,15 @@ class Bullet {
 class BulletManager {
   constructor() {
     this.bullets = [];
-    this.playerBullet = null;
   }
 
   addBullet(x, y, speed, isPlayer) {
-    if (isPlayer) {
-      if (this.playerBullet) return;
-      this.playerBullet = new Bullet(x, y, speed, true);
-      this.bullets.push(this.playerBullet);
-    } else {
-      this.bullets.push(new Bullet(x, y, speed, false));
-    }
+    this.bullets.push(new Bullet(x, y, speed, isPlayer));
   }
 
   update(dt) {
     for (const b of this.bullets) b.update(dt);
     this.bullets = this.bullets.filter(b => b.alive);
-    if (this.playerBullet && !this.playerBullet.alive) this.playerBullet = null;
   }
 
   render(ctx) {
@@ -385,7 +377,6 @@ class BulletManager {
 
   reset() {
     this.bullets = [];
-    this.playerBullet = null;
   }
 }
 
@@ -737,7 +728,10 @@ class Game {
         case STATE.PLAYING:
           const b = this.player.shoot();
           if (b) {
-            this.bulletManager.addBullet(b.x, b.y, CONFIG.bullets.playerSpeedPerFrame * 60, true);
+            const spd = CONFIG.bullets.playerSpeedPerFrame * 60;
+            this.bulletManager.addBullet(b.x - 8, b.y, spd, true);
+            this.bulletManager.addBullet(b.x, b.y, spd, true);
+            this.bulletManager.addBullet(b.x + 8, b.y, spd, true);
             this.audioManager.playShoot();
           }
           break;
@@ -812,7 +806,6 @@ class Game {
         const hit = this.alienFleet.checkCollision(b);
         if (hit) {
           b.alive = false;
-          if (this.bulletManager.playerBullet === b) this.bulletManager.playerBullet = null;
           this.scoreManager.addPoints(CONFIG.aliens.pointsPerRow[hit.row]);
           this.audioManager.playExplosion();
         }
