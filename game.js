@@ -18,20 +18,38 @@ const ASSETS = {
   sounds: {}
 };
 
+function loadAsset(el, timeout) {
+  return new Promise(resolve => {
+    const done = () => { clearTimeout(tid); resolve(); };
+    const tid = setTimeout(done, timeout);
+    el.addEventListener('error', done, { once: true });
+    if (el instanceof HTMLAudioElement) {
+      if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) { resolve(); return; }
+      el.addEventListener('canplaythrough', done, { once: true });
+      el.load();
+    } else {
+      if (el.complete) { resolve(); return; }
+      el.addEventListener('load', done, { once: true });
+    }
+  });
+}
+
 async function preloadAssets() {
+  console.log('Loading assets...');
   const img = new Image();
   img.src = 'assets/ghosty.png';
-  const sounds = {
-    shoot: new Audio('assets/jump.wav'),
-    hit: new Audio('assets/game_over.wav'),
-    FAH: new Audio('assets/FAH.mp3')
-  };
-  await new Promise(r => { img.onload = r; img.onerror = r; });
-  for (const s of Object.values(sounds)) {
-    await new Promise(r => { s.oncanplaythrough = r; s.onerror = r; }).catch(() => {});
+  const sounds = {};
+  for (const [k, path] of [['shoot', 'assets/jump.wav'], ['hit', 'assets/game_over.wav'], ['FAH', 'assets/FAH.mp3']]) {
+    try {
+      const a = new Audio(path);
+      await loadAsset(a, 3000);
+      sounds[k] = a;
+    } catch (e) { console.warn(`Audio ${path} failed:`, e); }
   }
+  await loadAsset(img, 5000).catch(() => {});
   ASSETS.ghost = img;
   ASSETS.sounds = sounds;
+  console.log('Assets loaded');
 }
 
 const STATE = { START: 'start', PLAYING: 'playing', GAMEOVER: 'gameover' };
