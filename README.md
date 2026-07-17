@@ -1,12 +1,18 @@
-# Flappy Kiro
+# Space Invaders Kiro
 
-Initial folder containing support resources for the Flappy Kiro game.
+Kiro the ghost travels through space fighting alien invaders in this retro browser game.
 
-## Example UI
+## Play
 
-![Flappy Kiro UI](img/example-ui.png)
+Open `index.html` in a browser or visit the live URL.
+
+## Controls
+
+- `←` `→` — Move Kiro left/right
+- `SPACE` — Shoot lasers
+- `ENTER` — Start game / Restart
 
 ## Resources
 
-- `assets/` - Game audio and sprites
-- `img/` - Screenshots and images
+- `assets/` — Game audio and sprites
+- `img/` — Screenshots and images

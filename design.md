@@ -1,92 +1,17 @@
-# Flappy Kiro - Design Document
+# Space Invaders Kiro — Design Document
 
 ## Configuration
 
-All game constants, assets, and parameters are centralized here for easy modification.
+All game constants, assets, and parameters are centralized in `game-config.json`.
 
 ### Asset Paths
 ```javascript
 const ASSETS = {
   PLAYER_SPRITE: 'assets/ghosty.png',
-  SOUND_JUMP: 'assets/jump.wav',
+  SOUND_SHOOT: 'assets/jump.wav',
+  SOUND_HIT: 'assets/game_over.wav',
+  SOUND_EXPLOSION: 'assets/jump.wav',
   SOUND_GAME_OVER: 'assets/game_over.wav'
-}
-```
-
-### Canvas Configuration
-```javascript
-const CANVAS = {
-  WIDTH: 800,
-  HEIGHT: 600
-}
-```
-
-### Physics Parameters
-```javascript
-const PHYSICS = {
-  GRAVITY: 0.5,              // Pixels per frame²
-  JUMP_FORCE: -10,           // Upward velocity on jump
-  TERMINAL_VELOCITY: 12,     // Maximum fall speed
-  ROTATION_FACTOR: 3         // Rotation sensitivity to velocity
-}
-```
-
-### Player Configuration
-```javascript
-const PLAYER = {
-  START_X: 150,              // Initial X position
-  START_Y: 300,              // Initial Y position (center)
-  SIZE: 40,                  // Sprite width/height
-  HITBOX_SCALE: 0.85         // Collision box scale (forgiving)
-}
-```
-
-### Obstacle Configuration
-```javascript
-const PIPES = {
-  WIDTH: 60,                 // Pipe width in pixels
-  GAP_SIZE: 165,             // Vertical gap between pipes
-  SPEED: 3,                  // Pixels per frame
-  SPAWN_INTERVAL: 2000,      // Milliseconds between spawns
-  MIN_HEIGHT: 100,           // Minimum pipe height
-  MAX_HEIGHT: 400,           // Maximum pipe height
-  COLOR: '#2D5016',          // Pipe fill color (dark green)
-  BORDER_COLOR: '#1A3309'    // Pipe border color
-}
-```
-
-### Background Configuration
-```javascript
-const BACKGROUND = {
-  SKY_COLOR: '#87CEEB',      // Light blue sky
-  CLOUD_COUNT: 8,            // Total clouds across all layers
-  
-  // Parallax layers (front to back)
-  LAYERS: [
-    { SPEED: 0.5,  OPACITY: 0.8, SIZE_SCALE: 1.2 },  // Front
-    { SPEED: 0.3,  OPACITY: 0.5, SIZE_SCALE: 1.0 },  // Middle
-    { SPEED: 0.15, OPACITY: 0.3, SIZE_SCALE: 0.8 }   // Back
-  ]
-}
-```
-
-### UI Configuration
-```javascript
-const UI = {
-  FONT_FAMILY: 'monospace',
-  FONT_SIZE_LARGE: 48,       // Title text
-  FONT_SIZE_MEDIUM: 32,      // Subtitle text
-  FONT_SIZE_SMALL: 24,       // Score text
-  TEXT_COLOR: '#FFFFFF',     // White text
-  TEXT_SHADOW_COLOR: '#000000', // Black shadow
-  SCORE_Y_OFFSET: 30         // Distance from bottom
-}
-```
-
-### Storage Keys
-```javascript
-const STORAGE = {
-  HIGH_SCORE_KEY: 'flappyKiroHighScore'
 }
 ```
 
@@ -106,40 +31,54 @@ const STATE = {
 ### Component Architecture
 ```
 ┌──────────────────────────────────────┐
-│          Game Manager                │
+│           Game Manager               │
 │  - State machine (START/PLAY/OVER)   │
 │  - Game loop (requestAnimationFrame) │
-│  - Input handling (spacebar)         │
+│  - Input handling (arrows + space)   │
 └──────────┬───────────────────────────┘
            │
-    ┌──────┴──────┬──────────┬──────────┐
-    │             │          │          │
-┌───▼───┐  ┌─────▼─────┐  ┌─▼────┐  ┌──▼────┐
-│Player │  │ Obstacles │  │Score │  │ Audio │
-└───────┘  └─────┬─────┘  └──────┘  └───────┘
-                 │
-          ┌──────┴──────┐
-     ┌────▼────┐  ┌─────▼──────┐
-     │  Pipes  │  │ Background │
-     └─────────┘  └────────────┘
+    ┌──────┼──────┬──────────┬──────────┐
+    │      │      │          │          │
+┌───▼──┐ ┌─▼───┐ ┌▼──────┐ ┌▼──────┐ ┌▼──────┐
+│Player│ │Alien│ │Bunker │ │Bullet │ │Star   │
+│      │ │Fleet│ │Mgr    │ │Mgr    │ │Field  │
+└───┬──┘ └──┬──┘ └───────┘ └──┬───┘ └───────┘
+    │       │                  │
+    │  ┌────▼────┐             │
+    │  │  Alien  │             │
+    │  │ (individual)          │
+    │  └─────────┘             │
+    │                          │
+┌───▼──────────────────────────▼──────────┐
+│           ScoreManager                  │
+│  - Score, lives, levels                │
+│  - localStorage persistence             │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│           AudioManager                  │
+│  - Sound playback with cloneNode        │
+│  - Pitch shifting (Web Audio API)       │
+└─────────────────────────────────────────┘
 ```
+
+---
 
 ## Core Systems
 
 ### 1. Game Manager
-
 Controls state machine and game loop.
 
 ```javascript
 class Game {
   constructor()
   init()              // Initialize all systems
-  start()             // Begin game loop (requestAnimationFrame)
-  update(deltaTime)   // Update all systems
-  render()            // Draw all systems (back to front)
-  handleInput(key)    // Process spacebar
-  setState(newState)  // Transition states
-  reset()             // Restart game
+  start()             // Begin game loop
+  update(dt)          // Update all systems
+  render()            // Draw all layers
+  handleInput(key)    // Process arrow keys & space
+  setState(newState)  // Transition between states
+  reset()             // Restart from menu
 }
 ```
 
@@ -147,207 +86,253 @@ class Game {
 ```
 START → PLAYING → GAMEOVER
   ↑_______________________↓
-      (Spacebar restarts)
+    (Spacebar restarts)
 ```
 
 ### 2. Player System
-
-Manages ghost physics, rendering, and collision.
+Kiro the ghost — movement, rendering, lives.
 
 ```javascript
 class Player {
   constructor(x, y, image)
-  update(deltaTime)   // Apply gravity and update position
-  jump()              // Apply upward velocity
-  render(ctx)         // Draw with rotation based on velocity
-  reset()             // Return to start position
-  getBounds()         // Return collision rectangle
+  update(dt)           // Handle movement input
+  moveLeft() / moveRight()
+  shoot()              // Fire a bullet if cooldown ready
+  hit()                // Lose a life, respawn
+  render(ctx)          // Draw Kiro with lean animation
+  reset()              // Return to starting position
 }
 ```
 
-**Physics:**
-- Gravity accelerates downward (see `PHYSICS.GRAVITY`)
-- Jump applies instant upward velocity (see `PHYSICS.JUMP_FORCE`)
-- Rotation: `angle = velocityY * PHYSICS.ROTATION_FACTOR` (clamped ±90°)
-- Collision box: Slightly smaller than sprite for forgiving gameplay
+**Movement:**
+- Speed: 350 px/s (from config)
+- Clamped to canvas bounds
+- Visual lean: rotate ±10° based on direction
 
-### 3. Obstacle System
+**Lives:**
+- Start with 3
+- 1 second respawn delay after hit
+- 0 lives → game over
 
-Manages pipe generation, movement, and collision.
+### 3. Alien Fleet System
+Grid of 55 aliens that move and shoot as a group.
 
 ```javascript
-class Pipe {
-  constructor(x, gapY, gapSize)
-  update(deltaTime)        // Move left
-  render(ctx)              // Draw top and bottom rectangles
-  isOffScreen()            // Check if past left edge
-  collidesWith(player)     // AABB collision detection
+class Alien {
+  constructor(x, y, row)
+  update(dt)
+  render(ctx)          // Draw with 2-frame walk animation
+  getBounds()          // Collision rectangle
 }
 
-class ObstacleManager {
+class AlienFleet {
   constructor()
-  update(deltaTime)        // Move pipes, spawn new ones
-  checkCollision(player)   // Returns true if collision
-  checkScore(player)       // Returns true if player passed pipe
-  render(ctx)              // Draw all pipes
-  reset()                  // Clear all pipes
+  update(dt)           // Move grid, check edges, step down
+  render(ctx)          // Draw all aliens
+  checkCollisions(bullet)  // Returns hit alien or null
+  shoot()              // Random alien fires a bullet
+  reset(level)         // Respawn for new level
+  getSpeed()           // Speed increases with fewer aliens
 }
 ```
 
-**Pipe Spawning:**
-- Interval: `PIPES.SPAWN_INTERVAL` milliseconds
-- Gap Y: Random between `PIPES.MIN_HEIGHT` and `PIPES.MAX_HEIGHT`
-- Gap size: `PIPES.GAP_SIZE` (constant)
-- Spawn position: Canvas right edge
+**Movement Algorithm:**
+```
+each frame:
+  if moving right:
+    if rightmost alien hits edge → reverse, step down
+  if moving left:
+    if leftmost alien hits edge → reverse, step down
+  speed = baseSpeed × (1 + (total - remaining) / total)
+```
 
-### 4. Background System
+**Shooting:**
+- Random interval per alien group: 0.5–3.0s
+- Random alien near center fires
 
-Renders sky and parallax clouds.
+### 4. Bullet System
+Manages all projectiles.
 
 ```javascript
-class Cloud {
-  constructor(x, y, width, height, speed, opacity)
-  update(deltaTime)   // Scroll left and wrap
-  render(ctx)         // Draw fluffy shape (overlapping circles)
+class Bullet {
+  constructor(x, y, speed, isPlayer)
+  update(dt)           // Move in direction
+  render(ctx)          // Draw with glow effect
+  isOffScreen()        // Check bounds
 }
 
-class BackgroundManager {
+class BulletManager {
   constructor()
-  update(deltaTime)   // Update all cloud layers
-  render(ctx)         // Draw sky + clouds (back to front)
+  addBullet(x, y, speed, isPlayer)
+  update(dt)
+  render(ctx)
+  checkCollisions(targets)   // Return hit or miss
+  reset()
 }
 ```
 
-**Parallax Layers:**
-- 3 layers with different speeds (see `BACKGROUND.LAYERS`)
-- Front clouds: Faster, more opaque, larger
-- Back clouds: Slower, more transparent, smaller
-- Clouds wrap around when they exit left edge
+**Bullet Properties:**
+| Property | Player | Alien |
+|---|---|---|
+| Speed | 700 px/s | 350 px/s |
+| Color | #FFFFFF | #FF4444 |
+| Width | 4px | 4px |
+| Height | 14px | 14px |
 
-### 5. Score System
+### 5. Bunker System
+Destructible barriers providing cover.
 
-Tracks and persists scores.
+```javascript
+class Bunker {
+  constructor(x, y)
+  hit(bulletX, bulletY)    // Remove pixel data at impact point
+  render(ctx)               // Draw remaining structure
+  isDestroyed()             // Check if fully gone
+}
+```
+
+**Structure:**
+- 4 bunkers evenly spaced across lower area
+- Each: 80×50px block
+- Pixel-level destruction on impact
+- Pattern: solid block with rounded top
+
+### 6. Starfield System
+Parallax scrolling star background.
+
+```javascript
+class StarField {
+  constructor()
+  update(dt)           // Scroll stars downward
+  render(ctx)          // Draw 3 layers of stars
+}
+```
+
+**Layers:**
+| Layer | Count | Speed | Size | Opacity |
+|---|---|---|---|---|
+| Far | 50 | 10 px/s | 1px | 0.3 |
+| Mid | 30 | 25 px/s | 2px | 0.6 |
+| Near | 20 | 45 px/s | 3px | 1.0 |
+
+### 7. Score System
+Tracks score, lives, levels, and high score persistence.
 
 ```javascript
 class ScoreManager {
   constructor()
-  increment()             // Add 1 point
-  reset()                 // Reset current score to 0
-  loadHighScore()         // Load from localStorage
-  saveHighScore()         // Save to localStorage
-  render(ctx)             // Draw "Score: X | High: Y"
+  addPoints(points)        // Add to current score
+  addLife() / loseLife()
+  nextLevel()              // Increment level, apply speed multiplier
+  reset()                  // Reset for new game
+  loadHighScore()          // From localStorage
+  saveHighScore()          // To localStorage
+  render(ctx)              // Draw score, lives, level
 }
 ```
 
-**Display:**
-- Position: Bottom center (`CANVAS.HEIGHT - UI.SCORE_Y_OFFSET`)
-- Format: "Score: X | High: Y"
-- Font: See `UI` config
-- Storage key: `STORAGE.HIGH_SCORE_KEY`
+**Score Table:**
+| Alien Row | Points |
+|---|---|
+| 1 (top) | 50 |
+| 2 | 40 |
+| 3 | 30 |
+| 4 | 20 |
+| 5 (bottom) | 10 |
 
-### 6. Audio System
+**Level Progression:**
+- Speed multiplier: ×1.3 per level
+- Bonus: +500 pts for clearing a level
+- Max level: unlimited (wraps difficulty)
 
-Plays sound effects.
+### 8. Audio System
+Sound effects with pitch shifting.
 
 ```javascript
 class AudioManager {
   constructor()
-  preload()           // Load assets (ASSETS.SOUND_JUMP, ASSETS.SOUND_GAME_OVER)
-  playJump()          // Play jump sound
-  playGameOver()      // Play game over sound
+  preload()                // Load all audio
+  playShoot()              // Laser sound
+  playExplosion()          // Alien destroyed (higher pitch)
+  playHit()                // Player damaged
+  playGameOver()           // Game over
 }
 ```
 
-**Implementation:**
-- Load Audio objects from `ASSETS.SOUND_*` paths
-- Use `cloneNode()` for overlapping sound effects
-- Graceful degradation if audio fails
+**Sound Mapping:**
+| Sound | File | Volume | Pitch |
+|---|---|---|---|
+| Shoot | jump.wav | 0.5 | normal |
+| Explosion | jump.wav | 0.4 | ×1.5 |
+| Hit | game_over.wav | 0.7 | normal |
+| Game Over | game_over.wav | 0.8 | normal |
+
+---
 
 ## Rendering Pipeline
 
 **Draw Order (Back to Front):**
-1. Clear canvas
-2. Fill sky (`BACKGROUND.SKY_COLOR`)
-3. Draw clouds (back → front layers)
-4. Draw pipes
-5. Draw player (with rotation)
-6. Draw score
-7. Draw state overlays (start menu / game over)
+1. Clear canvas (#0A0A2E)
+2. Starfield (far → mid → near)
+3. Bunkers
+4. Alien bullets
+5. Alien fleet
+6. Player bullet
+7. Player (Kiro)
+8. HUD: Score, Level, Lives
+9. State overlays (START / GAMEOVER)
+
+---
+
+## Input Handling
+
+| Key | START | PLAYING | GAMEOVER |
+|---|---|---|---|
+| SPACE | Start game | Shoot | Restart |
+| ← | — | Move left | — |
+| → | — | Move right | — |
+| ESC | — | — | Return to menu |
+
+---
+
+## Collision Detection (AABB)
 
 ```javascript
-function render(ctx) {
-  ctx.clearRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT)
-  ctx.fillStyle = BACKGROUND.SKY_COLOR
-  ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT)
-  
-  backgroundManager.render(ctx)
-  obstacleManager.render(ctx)
-  player.render(ctx)
-  scoreManager.render(ctx)
-  
-  if (state === STATE.START) renderStartMenu(ctx)
-  if (state === STATE.GAMEOVER) renderGameOver(ctx)
+function checkAABB(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y
 }
 ```
 
-## Algorithms
+**Collision Pairs:**
+- Player bullet → Aliens
+- Alien bullet → Player
+- Player bullet → Bunker
+- Alien bullet → Bunker
+- Alien reaches bottom → Game Over
 
-### Collision Detection (AABB)
-```javascript
-function checkCollision(rect1, rect2) {
-  return rect1.x < rect2.x + rect2.width &&
-         rect1.x + rect1.width > rect2.x &&
-         rect1.y < rect2.y + rect2.height &&
-         rect1.y + rect1.height > rect2.y
-}
-```
-
-### Random Gap Position
-```javascript
-function randomGapY() {
-  const min = PIPES.MIN_HEIGHT + PIPES.GAP_SIZE / 2
-  const max = CANVAS.HEIGHT - PIPES.MIN_HEIGHT - PIPES.GAP_SIZE / 2
-  return Math.random() * (max - min) + min
-}
-```
-
-### Score Detection
-```javascript
-function checkPipePass(player, pipe) {
-  if (!pipe.scored && player.x > pipe.x + PIPES.WIDTH) {
-    pipe.scored = true
-    return true
-  }
-  return false
-}
-```
+---
 
 ## File Structure
 
 ```
 kiro-introduction/
-├── index.html              # Canvas and script references
+├── index.html              # Canvas + script references
 ├── game.js                 # All game logic
 ├── styles.css              # Page styling
-├── assets/
-│   ├── ghosty.png         # Player sprite
-│   ├── jump.wav           # Jump sound
-│   └── game_over.wav      # Game over sound
+├── game-config.json        # Game constants
+├── kiro-sprites.md         # Sprite specifications
+├── audio-assets.md         # Audio mapping
+├── ui-mockups.md           # UI layouts
 ├── requirements.md
 ├── design.md
-└── tasks.md
+├── tasks.md
+├── assets/
+│   ├── ghosty.png         # Kiro sprite
+│   ├── jump.wav           # Shoot & explosion sounds
+│   └── game_over.wav      # Hit & game over sounds
+└── img/
+    └── example-ui.png
 ```
-
----
-
-## Implementation Notes
-
-**Asset Loading:** Preload all assets before starting game loop
-
-**Performance:** Use `requestAnimationFrame` for consistent 60 FPS
-
-**Collision:** Use AABB with slightly smaller hitbox for forgiving gameplay
-
-**Storage:** Use localStorage for high score persistence (key: `STORAGE.HIGH_SCORE_KEY`)
-
-**Input:** Single spacebar handler with different behavior per state

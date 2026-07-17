@@ -1,0 +1,48 @@
+{
+  "canvas": {
+    "width": 800,
+    "height": 600
+  },
+  "player": {
+    "width": 32,
+    "height": 32,
+    "speed": 350,
+    "y": 540,
+    "lives": 3,
+    "shootCooldown": 0.25
+  },
+  "aliens": {
+    "rows": 5,
+    "cols": 11,
+    "width": 32,
+    "height": 32,
+    "padding": 16,
+    "offsetTop": 80,
+    "speed": 50,
+    "stepDown": 24,
+    "pointsPerRow": [50, 40, 30, 20, 10],
+    "shootInterval": [0.5, 3.0]
+  },
+  "bullets": {
+    "playerSpeed": 700,
+    "alienSpeed": 350,
+    "width": 4,
+    "height": 14,
+    "color": "#FFFFFF",
+    "alienColor": "#FF4444"
+  },
+  "bunkers": {
+    "count": 4,
+    "width": 80,
+    "height": 50,
+    "y": 460
+  },
+  "levels": {
+    "speedMultiplier": 1.3,
+    "bonus": 500
+  },
+  "starField": {
+    "count": 100,
+    "speed": 30
+  }
+}

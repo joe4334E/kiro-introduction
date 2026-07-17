@@ -1,148 +1,112 @@
-# Flappy Kiro - Requirements
+# Space Invaders Kiro — Requirements
 
 ## Overview
-Flappy Kiro is a browser-based retro game inspired by Flappy Bird, featuring a ghost character navigating through endless pipe obstacles with parallax cloud effects.
+Space Invaders Kiro is a browser-based retro game where Kiro (a ghost) defends against waves of alien invaders. Built with HTML5 Canvas and vanilla JavaScript.
+
+---
 
 ## Functional Requirements
 
-### FR-1: Player Character
-- **FR-1.1**: Display a ghost sprite using `assets/ghosty.png` as the player character
-- **FR-1.2**: Apply constant downward gravity to the ghost
-- **FR-1.3**: Enable spacebar key to make the ghost jump upward
-- **FR-1.4**: Implement smooth jumping animation with upward velocity
-- **FR-1.5**: Rotate the ghost sprite based on velocity (tilting up when jumping, down when falling)
+### FR-1: Player Character (Kiro)
+- **FR-1.1**: Render Kiro the ghost as the player character near the bottom of the screen
+- **FR-1.2**: Move Kiro left and right using ← → arrow keys
+- **FR-1.3**: Clamp Kiro within canvas boundaries
+- **FR-1.4**: Visual feedback when moving (slight lean)
+- **FR-1.5**: Kiro has 3 lives; losing all triggers game over
 
-### FR-2: Obstacles
-- **FR-2.1**: Generate pairs of green pipes (top and bottom) with vertical gaps
-- **FR-2.2**: Move pipes continuously from right to left across the screen
-- **FR-2.3**: Randomize gap positions for each pipe pair within safe bounds
-- **FR-2.4**: Maintain consistent gap size for fair gameplay
-- **FR-2.5**: Spawn new pipe pairs at regular intervals
-- **FR-2.6**: Remove pipes that move off-screen to optimize performance
-- **FR-2.7**: Detect collision between ghost and pipes
+### FR-2: Shooting
+- **FR-2.1**: Press SPACE to fire a laser upward from Kiro's position
+- **FR-2.2**: Maximum 1 player bullet on screen at a time
+- **FR-2.3**: Player bullet moves upward at 700 px/s
+- **FR-2.4**: Bullet disappears when hitting alien, bunker, or top of screen
+- **FR-2.5**: Shoot cooldown of 0.25 seconds
 
-### FR-3: Audio System
-- **FR-3.1**: Play `assets/jump.wav` sound effect when spacebar is pressed
-- **FR-3.2**: Play `assets/game_over.wav` sound effect on collision with pipes or boundaries
-- **FR-3.3**: Support audio preloading to prevent delays
-- **FR-3.4**: Allow audio to play even if previous instance hasn't finished
+### FR-3: Alien Fleet
+- **FR-3.1**: Spawn 55 aliens in a 5×11 grid at the top of the screen
+- **FR-3.2**: Aliens move as a block: right → down → left → down (zigzag)
+- **FR-3.3**: Aliens step down 24px when reaching horizontal edge
+- **FR-3.4**: Alien speed increases as fewer remain (proportional)
+- **FR-3.5**: Aliens occasionally shoot bullets downward at random intervals
+- **FR-3.6**: Top row aliens are worth 50pts, descending to 10pts for bottom row
 
-### FR-4: Game States
-- **FR-4.1**: **Start Menu State**
-  - Display game title "Flappy Kiro"
-  - Show instruction text (e.g., "Press SPACEBAR to Start")
-  - Display current high score
-  - Wait for spacebar input to begin game
-  
-- **FR-4.2**: **Playing State**
-  - Update ghost position based on physics
-  - Scroll pipes across screen
-  - Display current score in real-time
-  - Display high score
-  - Detect collisions and trigger game over
-  
-- **FR-4.3**: **Game Over State**
-  - Freeze game animation
-  - Display "Game Over" message
-  - Show final score
-  - Show high score (update if beaten)
-  - Display restart instruction (e.g., "Press SPACEBAR to Restart")
-  - Wait for spacebar input to restart
+### FR-4: Bunkers
+- **FR-4.1**: Render 4 destructible bunkers in the lower area
+- **FR-4.2**: Bunkers block both player and alien bullets
+- **FR-4.3**: Bunkers degrade pixel-by-pixel on impact
+- **FR-4.4**: Bunkers are positioned at y=460, evenly spaced
 
-### FR-5: Scoring System
-- **FR-5.1**: Increment score by 1 when ghost successfully passes through a pipe pair
-- **FR-5.2**: Display current score during gameplay at the bottom of screen
-- **FR-5.3**: Track and display high score across game sessions
-- **FR-5.4**: Persist high score using browser local storage
-- **FR-5.5**: Display format: "Score: X | High: Y"
+### FR-5: Scoring & Progression
+- **FR-5.1**: Display current score at top-left during gameplay
+- **FR-5.2**: Display current level at top-right
+- **FR-5.3**: Score per alien varies by row (50/40/30/20/10 pts)
+- **FR-5.4**: Bonus 500 points for clearing all aliens
+- **FR-5.5**: Track and persist high score via localStorage
+- **FR-5.6**: New level starts after clearing all aliens (speed increases ×1.3)
 
-### FR-6: Background & Visuals
-- **FR-6.1**: Render light blue sky background color (#87CEEB or similar)
-- **FR-6.2**: Generate multiple white semi-transparent cloud shapes
-- **FR-6.3**: Implement parallax scrolling with at least 3 cloud layers at different speeds
-- **FR-6.4**: Clouds should move left continuously and wrap around
-- **FR-6.5**: Front clouds move faster, back clouds move slower
-- **FR-6.6**: Cloud opacity varies by layer (closer = more opaque)
+### FR-6: Lives & Game Over
+- **FR-6.1**: Display remaining lives as star icons bottom-left
+- **FR-6.2**: Kiro respawns after 1 second when hit (no invincibility)
+- **FR-6.3**: Losing all 3 lives triggers game over
+- **FR-6.4**: Game over also triggers if aliens reach Kiro's y-position
+
+### FR-7: Game States
+- **FR-7.1**: **Start Menu** — Title, Kiro preview, high score, controls hint
+- **FR-7.2**: **Playing** — Active gameplay with all mechanics
+- **FR-7.3**: **Game Over** — Frozen screen, final score, restart prompt
+
+### FR-8: Background & Visuals
+- **FR-8.1**: Dark navy space background (#0A0A2E)
+- **FR-8.2**: Parallax starfield with 3 depth layers, 100 stars total
+- **FR-8.3**: Each alien type has distinct color and shape per row
+
+### FR-9: Audio
+- **FR-9.1**: Play laser sound on player shoot
+- **FR-9.2**: Play explosion sound on alien destruction
+- **FR-9.3**: Play hit sound when Kiro takes damage
+- **FR-9.4**: Play game over sound on defeat
+
+---
 
 ## Non-Functional Requirements
 
 ### NFR-1: Performance
-- **NFR-1.1**: Maintain 60 FPS gameplay on modern browsers
-- **NFR-1.2**: Smooth animations without stuttering
-- **NFR-1.3**: Efficient rendering using HTML5 Canvas
+- **NFR-1.1**: Maintain 60 FPS on modern browsers
+- **NFR-1.2**: Efficient Canvas rendering (no unnecessary redraws)
 
 ### NFR-2: Compatibility
-- **NFR-2.1**: Support modern browsers (Chrome, Firefox, Safari, Edge)
-- **NFR-2.2**: Responsive design that scales to different screen sizes
-- **NFR-2.3**: Work without requiring internet connection after initial load
+- **NFR-2.1**: Works on Chrome, Firefox, Safari, Edge
+- **NFR-2.2**: No internet required after initial load
+- **NFR-2.3**: Responsive canvas scaling
 
-### NFR-3: Usability
-- **NFR-3.1**: Simple one-button control (spacebar only)
-- **NFR-3.2**: Clear visual feedback for all game states
-- **NFR-3.3**: Immediate restart capability after game over
-- **NFR-3.4**: Consistent collision detection
+### NFR-3: Code Quality
+- **NFR-3.1**: Vanilla JavaScript, no frameworks
+- **NFR-3.2**: Clean class-based architecture
+- **NFR-3.3**: Modular separation of concerns
 
-### NFR-4: Code Quality
-- **NFR-4.1**: Clean, modular JavaScript code structure
-- **NFR-4.2**: Proper separation of game logic, rendering, and state management
-- **NFR-4.3**: Well-commented code for maintainability
+---
 
 ## Technical Constraints
 
-### TC-1: Technology Stack
-- HTML5 for structure
-- CSS3 for styling
-- Vanilla JavaScript (no frameworks required)
-- HTML5 Canvas API for rendering
-- Web Audio API for sound effects
+### TC-1: Stack
+- HTML5 + CSS3 + Vanilla JavaScript
+- HTML5 Canvas for rendering
+- Web Audio API for sound
 
 ### TC-2: Assets
-- Ghost sprite: `assets/ghosty.png`
-- Jump sound: `assets/jump.wav`
-- Game over sound: `assets/game_over.wav`
-- Pipes: Rendered programmatically (green rectangles)
-- Clouds: Rendered programmatically (white rounded shapes)
+- `assets/ghosty.png` — Kiro sprite
+- `assets/jump.wav` — Laser & alien explosion sounds
+- `assets/game_over.wav` — Player hit & game over sounds
+- All game graphics rendered procedurally on canvas
 
-### TC-3: Game Parameters
-- Canvas dimensions: 800x600 pixels (or responsive)
-- Gravity: ~0.5 pixels per frame²
-- Jump velocity: ~-10 pixels per frame
-- Pipe speed: ~3 pixels per frame
-- Pipe gap: ~150-180 pixels
-- Pipe spawn interval: ~2 seconds
-- Cloud speeds: Layer 1 (0.5px/frame), Layer 2 (0.3px/frame), Layer 3 (0.15px/frame)
+### TC-3: Canvas
+- Dimensions: 800×600 pixels
+- 60 FPS via requestAnimationFrame
 
-## Acceptance Criteria
+---
 
-### AC-1: Core Gameplay
-- User can start game from menu by pressing spacebar
-- Ghost falls due to gravity and jumps when spacebar is pressed
-- Pipes scroll continuously from right to left
-- Score increments when passing pipes
-- Game ends on collision with pipes or screen boundaries
-- User can restart immediately after game over
-
-### AC-2: Visual Polish
-- Parallax clouds create depth perception
-- Ghost rotates based on movement direction
-- Score display is always visible and readable
-- All game states have clear visual indicators
-
-### AC-3: Audio Feedback
-- Jump sound plays on every spacebar press during gameplay
-- Game over sound plays on collision
-- No audio lag or delay
-
-### AC-4: Persistence
-- High score is saved and persists across browser sessions
-- High score updates correctly when beaten
-
-## Out of Scope (Future Enhancements)
+## Out of Scope
 - Mobile touch controls
-- Multiple difficulty levels
-- Power-ups or special abilities
-- Background music
-- Animated ghost sprite frames
-- Leaderboard system
+- Power-ups / special weapons
+- Boss fights
+- Online leaderboard
 - Different character skins
-- Achievement system
